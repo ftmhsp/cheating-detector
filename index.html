@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>فرم آزمون - تشخیص تقلب</title>
+  <style>
+    body { font-family: Tahoma, sans-serif; padding: 2rem; background: #f5f5f5; }
+    h1 { color: #333; }
+    input, textarea { display: block; margin-bottom: 1rem; width: 100%; padding: 0.5rem; border-radius: 6px; border: 1px solid #ccc; }
+    button { padding: 0.6rem 1.5rem; background: #2196f3; color: white; border: none; border-radius: 6px; cursor: pointer; }
+    button:hover { background: #0b7dda; }
+    #result { margin-top: 2rem; font-weight: bold; white-space: pre-wrap; direction: rtl; background: #fff; padding: 1rem; border-radius: 6px; }
+  </style>
+</head>
+<body>
+  <h1>📝 فرم پاسخ‌دهی آزمون</h1>
+
+  <input id="studentId" placeholder="شناسه دانش‌آموز (مثلاً S1)" required>
+  <textarea id="q1" placeholder="پاسخ پرسش اول"></textarea>
+  <input type="number" id="t1" placeholder="زمان صرف‌شده برای پرسش اول (ثانیه)">
+  <textarea id="q2" placeholder="پاسخ پرسش دوم"></textarea>
+  <input type="number" id="t2" placeholder="زمان صرف‌شده برای پرسش دوم (ثانیه)">
+
+  <button onclick="submitAnswers()">ثبت پاسخ</button>
+  <button onclick="analyze()">تحلیل تقلب</button>
+
+  <div id="result"></div>
+
+  <script>
+    async function submitAnswers() {
+      const studentId = document.getElementById('studentId').value.trim();
+      const q1 = document.getElementById('q1').value.trim();
+      const t1 = parseInt(document.getElementById('t1').value);
+      const q2 = document.getElementById('q2').value.trim();
+      const t2 = parseInt(document.getElementById('t2').value);
+
+      const payload = {
+        student_id: studentId,
+        answers: [
+          { question_id: "Q1", text: q1, time_taken: t1 },
+          { question_id: "Q2", text: q2, time_taken: t2 }
+        ]
+      };
+
+      console.log("📤 ارسال داده:", payload);
+
+      try {
+        const res = await fetch('http://127.0.0.1:8000/submit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        if (!res.ok) throw new Error("پاسخ نامعتبر از سرور");
+
+        const data = await res.json();
+        document.getElementById('result').innerText = '✅ ' + data.message;
+      } catch (err) {
+        document.getElementById('result').innerText = '❌ خطا در ارسال پاسخ';
+        console.error("❌ خطا در ارسال:", err);
+      }
+    }
+
+    async function analyze() {
+      console.log("🔍 شروع تحلیل تقلب...");
+      try {
+        const res = await fetch('http://127.0.0.1:8000/analyze');
+        if (!res.ok) throw new Error("پاسخ نامعتبر از سرور");
+
+        const data = await res.json();
+        console.log("📥 نتیجه از سرور:", data);
+
+        if (data.text_similarity_suspects.length === 0 && data.time_similarity_suspects.length === 0) {
+          document.getElementById('result').innerText = '✅ نتایج تحلیل:\nهیچ مورد مشکوکی یافت نشد.';
+          return;
+        }
+
+        let output = "نتایج تحلیل تقلب:\n\n";
+
+        if (data.text_similarity_suspects.length > 0) {
+          output += "👯 تشابه متنی:\n";
+          data.text_similarity_suspects.forEach(item => {
+            output += `دانش‌آموز ${item.student1} و ${item.student2} در ${item.question_id} با شباهت ${item.similarity}%\n`;
+          });
+        }
+
+        if (data.time_similarity_suspects.length > 0) {
+          output += "\n⏱️ تشابه زمانی:\n";
+          data.time_similarity_suspects.forEach(item => {
+            output += `دانش‌آموز ${item.student1} و ${item.student2} در ${item.question_id} با اختلاف ${item.time_difference} ثانیه\n`;
+          });
+        }
+
+        document.getElementById('result').innerText = output;
+
+      } catch (err) {
+        console.error("❌ خطا در تحلیل:", err);
+        document.getElementById('result').innerText = '❌ خطا در تحلیل تقلب';
+      }
+    }
+  </script>
+</body>
+</html>
