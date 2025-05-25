@@ -23,10 +23,13 @@ def submit_response(student: StudentResponse):
 def analyze_cheating():
     student_data = fetch_all_responses()
     print("🔍 داده‌های واکشی‌شده:", student_data)
-    text_matches = analyze_similarities(student_data, similarity_threshold=0.5)
+    text_matches = analyze_similarities(student_data, similarity_threshold=0.3)
+    print("Text similarity matches:", text_matches)
     time_matches = analyze_time(student_data, time_threshold=15)
+    print("Time similarity matches:", time_matches)
 
     return {
         "text_similarity_suspects": text_matches,
         "time_similarity_suspects": time_matches
     }
+
