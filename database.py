@@ -22,7 +22,7 @@ answers_table = Table(
 metadata.create_all(engine)
 
 def save_student_response(student: StudentResponse):
-    with engine.connect() as conn:
+    with engine.begin() as conn:
         for answer in student.answers:
             conn.execute(answers_table.insert().values(
                 student_id=student.student_id,
