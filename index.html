@@ -37,13 +37,16 @@
 
       const payload = {
         student_id: studentId,
-        answers: [
-          { question_id: "Q1", text: q1, time_taken: t1 },
-          { question_id: "Q2", text: q2, time_taken: t2 }
-        ]
+        answers: []
       };
 
-      console.log("📤 ارسال داده:", payload);
+      if (q1 && t1 > 0) payload.answers.push({ question_id: "Q1", text: q1, time_taken: t1 });
+      if (q2 && t2 > 0) payload.answers.push({ question_id: "Q2", text: q2, time_taken: t2 });
+
+      if (!payload.answers.length) {
+        document.getElementById('result').innerText = '❗️ لطفاً حداقل یک پاسخ معتبر وارد کنید';
+        return;
+      }
 
       try {
         const res = await fetch('http://127.0.0.1:8000/submit', {
@@ -63,42 +66,30 @@
     }
 
     async function analyze() {
-      console.log("🔍 شروع تحلیل تقلب...");
       try {
         const res = await fetch('http://127.0.0.1:8000/analyze');
         if (!res.ok) throw new Error("پاسخ نامعتبر از سرور");
 
         const data = await res.json();
-        console.log("📥 نتیجه از سرور:", data);
 
         if (data.text_similarity_suspects.length === 0 && data.time_similarity_suspects.length === 0) {
           document.getElementById('result').innerText = '✅ نتایج تحلیل:\nهیچ مورد مشکوکی یافت نشد.';
-          return;
+        } else {
+          let output = "نتایج تحلیل تقلب:\n\n";
+
+          if (data.text_similarity_suspects.length > 0) {
+            output += "👯 تشابه متنی:\n";
+            data.text_similarity_suspects.forEach(item => {
+              output += دانش‌آموز ${item.student1} و ${item.student2} در ${item.question_id} با شباهت ${item.similarity}%\n;
+            });
+          }
+
+          if (data.time_similarity_suspects.length > 0) {
+            output += "\n⏱ تشابه زمانی:\n";
+            data.time_similarity_suspects.forEach(item => {
+              output += دانش‌آموز ${item.student1} و ${item.student2} در ${item.question_id} با اختلاف ${item.time_difference} ثانیه\n;
+            });
+          }
+
+          document.getElementById('result').innerText = output;
         }
-
-        let output = "نتایج تحلیل تقلب:\n\n";
-
-        if (data.text_similarity_suspects.length > 0) {
-          output += "👯 تشابه متنی:\n";
-          data.text_similarity_suspects.forEach(item => {
-            output += `دانش‌آموز ${item.student1} و ${item.student2} در ${item.question_id} با شباهت ${item.similarity}%\n`;
-          });
-        }
-
-        if (data.time_similarity_suspects.length > 0) {
-          output += "\n⏱️ تشابه زمانی:\n";
-          data.time_similarity_suspects.forEach(item => {
-            output += `دانش‌آموز ${item.student1} و ${item.student2} در ${item.question_id} با اختلاف ${item.time_difference} ثانیه\n`;
-          });
-        }
-
-        document.getElementById('result').innerText = output;
-
-      } catch (err) {
-        console.error("❌ خطا در تحلیل:", err);
-        document.getElementById('result').innerText = '❌ خطا در تحلیل تقلب';
-      }
-    }
-  </script>
-</body>
-</html>
