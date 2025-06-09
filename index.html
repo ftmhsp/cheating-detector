@@ -93,3 +93,27 @@
 
           document.getElementById('result').innerText = output;
         }
+
+        // 🎯 دانلود فایل JSON
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const downloadLink = document.createElement("a");
+        downloadLink.href = url;
+        downloadLink.download = "analysis_result.json";
+        downloadLink.innerText = "⬇️ دانلود فایل تحلیل (JSON)";
+        downloadLink.style.display = "inline-block";
+        downloadLink.style.marginTop = "1rem";
+
+        const oldLink = document.getElementById("downloadLink");
+        if (oldLink) oldLink.remove();
+        downloadLink.id = "downloadLink";
+        document.getElementById('result').appendChild(downloadLink);
+
+      } catch (err) {
+        console.error("❌ خطا در تحلیل:", err);
+        document.getElementById('result').innerText = '❌ خطا در تحلیل تقلب';
+      }
+    }
+  </script>
+</body>
+</html>
